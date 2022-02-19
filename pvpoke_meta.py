@@ -10,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 class Pokemon:
     def __init__(self, name: str, score: str):
@@ -32,7 +33,7 @@ def get_new_driver(headless: bool = True) -> WebDriver:
     time.sleep(2)
     wait = WebDriverWait(driver, 2)
 
-    muilti_battle: WebElement = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#main > div.section.league-select-container.white > div > a:nth-child(2)")))
+    muilti_battle: WebElement = wait.until(EC.element_to_be_clickable(driver.find_element(By.CSS_SELECTOR, "#main > div.section.league-select-container.white > div > a:nth-child(2)")))
     muilti_battle.click()
     
     return driver
@@ -42,15 +43,22 @@ def get_score(pokemon: Pokemon) -> Pokemon:
     wait = WebDriverWait(driver, 2)
 
     try:
-        pokemon_selector_el: WebElement = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#main > div.section.poke-select-container.multi > div:nth-child(1) > select")))
+        pokemon_selector_el: WebElement = wait.until(EC.element_to_be_clickable(driver.find_element(By.CSS_SELECTOR, "#main > div.section.poke-select-container.multi > div:nth-child(1) > select")))
         pokemon_selector: Select = Select(pokemon_selector_el)
 
         pokemon_selector.select_by_visible_text(pokemon.name)
 
-        battle_button: WebElement = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#main > div.section.battle > button.battle-btn.button")))
+        battle_button: WebElement = wait.until(EC.element_to_be_clickable(driver.find_element(By.CSS_SELECTOR, "#main > div.section.battle > button.battle-btn.button")))
         battle_button.click()
 
-        score_el: WebElement = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "#main > div.section.battle > div:nth-child(6) > div > div > div > div > div.label.rating.star > span")))
+        time.sleep(0.5)
+
+        url = driver.current_url
+        driver.get(url)
+
+        time.sleep(1.5)
+
+        score_el: WebElement = wait.until(EC.element_to_be_clickable(driver.find_element(By.CSS_SELECTOR, "#main > div.section.battle > div:nth-child(6) > div > div > div > div > div.label.rating.star > span")))
         pokemon.score = score_el.text
     except:
         pass
@@ -66,7 +74,7 @@ if __name__ == '__main__':
     driver = get_new_driver()
     wait = WebDriverWait(driver, 2)
 
-    pokemon_selector_el: WebElement = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#main > div.section.poke-select-container.multi > div:nth-child(1) > select")))
+    pokemon_selector_el: WebElement = wait.until(EC.element_to_be_clickable(driver.find_element(By.CSS_SELECTOR, "#main > div.section.poke-select-container.multi > div:nth-child(1) > select")))
     pokemon_list: List[str] = pokemon_selector_el.text.split('\n')
 
     print("Length of pokemon list: {}".format(len(pokemon_list)))
@@ -82,7 +90,7 @@ if __name__ == '__main__':
 
     results.sort(key=lambda x: int(x.score), reverse=True)
 
-    with open('pvpoke_meta.csv', 'w') as f:
+    with open(f'pvpoke_meta_{int(time.time())}.csv', 'w') as f:
         f.write('name,score\n')
         for pokemon in results:
             f.write(f'{pokemon.name},{pokemon.score}\n')
